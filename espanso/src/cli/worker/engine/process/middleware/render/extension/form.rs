@@ -37,7 +37,7 @@ impl<'a> FormProviderAdapter<'a> {
   }
 }
 
-impl<'a> FormProvider for FormProviderAdapter<'a> {
+impl FormProvider for FormProviderAdapter<'_> {
   fn show(&self, layout: &str, fields: &Params, _: &Params) -> FormProviderResult {
     let fields = convert_fields(fields);
     match self.form_ui.show(layout, &fields) {
@@ -85,7 +85,7 @@ fn convert_fields(fields: &Params) -> HashMap<String, FormField> {
           multiline: params
             .get("multiline")
             .and_then(|val| val.as_bool())
-            .cloned()
+            .copied()
             .unwrap_or(false),
         }),
       }
@@ -109,7 +109,7 @@ fn extract_values(value: &Value, trim_string_values: Option<&Value>) -> Option<V
     Value::Array(values) => Some(
       values
         .iter()
-        .flat_map(|choice| choice.as_string())
+        .filter_map(|choice| choice.as_string())
         .cloned()
         .collect(),
     ),
@@ -119,10 +119,10 @@ fn extract_values(value: &Value, trim_string_values: Option<&Value>) -> Option<V
         .filter_map(|line| {
           if trim_string_values {
             let trimmed_line = line.trim();
-            if !trimmed_line.is_empty() {
-              Some(trimmed_line)
-            } else {
+            if trimmed_line.is_empty() {
               None
+            } else {
+              Some(trimmed_line)
             }
           } else {
             Some(line)

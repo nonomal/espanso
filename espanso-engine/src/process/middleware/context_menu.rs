@@ -33,6 +33,7 @@ const CONTEXT_ITEM_SECURE_INPUT_EXPLAIN: u32 = 4;
 const CONTEXT_ITEM_SECURE_INPUT_TRIGGER_WORKAROUND: u32 = 5;
 const CONTEXT_ITEM_OPEN_SEARCH: u32 = 6;
 const CONTEXT_ITEM_SHOW_LOGS: u32 = 7;
+const CONTEXT_ITEM_OPEN_CONFIG_FOLDER: u32 = 8;
 
 pub struct ContextMenuMiddleware {
   is_enabled: RefCell<bool>,
@@ -48,7 +49,6 @@ impl ContextMenuMiddleware {
   }
 }
 
-#[allow(clippy::needless_return)]
 impl Middleware for ContextMenuMiddleware {
   fn name(&self) -> &'static str {
     "context_menu"
@@ -84,6 +84,10 @@ impl Middleware for ContextMenuMiddleware {
             label: "Reload config".to_string(),
           }),
           MenuItem::Simple(SimpleMenuItem {
+            id: CONTEXT_ITEM_OPEN_CONFIG_FOLDER,
+            label: "Open config folder".to_string(),
+          }),
+          MenuItem::Simple(SimpleMenuItem {
             id: CONTEXT_ITEM_SHOW_LOGS,
             label: "Show logs".to_string(),
           }),
@@ -116,13 +120,13 @@ impl Middleware for ContextMenuMiddleware {
         // actions such as Exit, Open Editor etc
         // then we need some u32 for the matches, so we need to create
         // a mapping structure match_id <-> context-menu-id
-        return Event::caused_by(
+        Event::caused_by(
           event.source_id,
           EventType::ShowContextMenu(ShowContextMenuEvent {
             // TODO: add actual entries
             items,
           }),
-        );
+        )
       }
       EventType::ContextMenuClicked(context_click_event) => {
         match context_click_event.context_item_id {
@@ -162,6 +166,13 @@ impl Middleware for ContextMenuMiddleware {
           }
           CONTEXT_ITEM_SHOW_LOGS => {
             dispatch(Event::caused_by(event.source_id, EventType::ShowLogs));
+            Event::caused_by(event.source_id, EventType::NOOP)
+          }
+          CONTEXT_ITEM_OPEN_CONFIG_FOLDER => {
+            dispatch(Event::caused_by(
+              event.source_id,
+              EventType::ShowConfigFolder,
+            ));
             Event::caused_by(event.source_id, EventType::NOOP)
           }
           _ => {

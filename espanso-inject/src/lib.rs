@@ -38,9 +38,6 @@ mod linux;
 #[cfg(target_os = "macos")]
 mod mac;
 
-#[macro_use]
-extern crate lazy_static;
-
 pub trait Injector {
   fn send_string(&self, string: &str, options: InjectionOptions) -> Result<()>;
   fn send_keys(&self, keys: &[keys::Key], options: InjectionOptions) -> Result<()>;
@@ -69,12 +66,13 @@ pub struct InjectionOptions {
 
 impl Default for InjectionOptions {
   fn default() -> Self {
-    #[allow(clippy::if_same_then_else)]
+    // #[allow(clippy::if_same_then_else)]
     let default_delay = if cfg!(target_os = "windows") {
       0
     } else if cfg!(target_os = "macos") {
       1
     } else if cfg!(target_os = "linux") {
+      #[allow(clippy::bool_to_int_with_if)]
       if cfg!(feature = "wayland") {
         1
       } else {

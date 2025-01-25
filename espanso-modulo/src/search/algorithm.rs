@@ -21,15 +21,14 @@ use std::collections::HashSet;
 
 use crate::sys::search::types::SearchItem;
 
-pub fn get_algorithm(
-  name: &str,
-  use_command_filter: bool,
-) -> Box<dyn Fn(&str, &[SearchItem]) -> Vec<usize>> {
-  let search_algorithm: Box<dyn Fn(&str, &[SearchItem]) -> Vec<usize>> = match name {
+type FilterCallback = dyn Fn(&str, &[SearchItem]) -> Vec<usize>;
+
+pub fn get_algorithm(name: &str, use_command_filter: bool) -> Box<FilterCallback> {
+  let search_algorithm: Box<FilterCallback> = match name {
     "exact" => Box::new(exact_match),
     "iexact" => Box::new(case_insensitive_exact_match),
     "ikey" => Box::new(case_insensitive_keyword),
-    _ => panic!("unknown search algorithm: {}", name),
+    _ => panic!("unknown search algorithm: {name}"),
   };
 
   if use_command_filter {
@@ -45,7 +44,7 @@ fn exact_match(query: &str, items: &[SearchItem]) -> Vec<usize> {
     .enumerate()
     .filter(|(_, item)| {
       item.label.contains(query)
-        || item.trigger.as_deref().map_or(false, |t| t.contains(query))
+        || item.trigger.as_deref().is_some_and(|t| t.contains(query))
         || item.search_terms.iter().any(|term| term.contains(query))
     })
     .map(|(i, _)| i)
@@ -62,7 +61,7 @@ fn case_insensitive_exact_match(query: &str, items: &[SearchItem]) -> Vec<usize>
         || item
           .trigger
           .as_deref()
-          .map_or(false, |t| t.to_lowercase().contains(query))
+          .is_some_and(|t| t.to_lowercase().contains(query))
         || item
           .search_terms
           .iter()
@@ -79,12 +78,12 @@ fn case_insensitive_keyword(query: &str, items: &[SearchItem]) -> Vec<usize> {
     .iter()
     .enumerate()
     .filter(|(_, item)| {
-      for keyword in keywords.iter() {
+      for keyword in &keywords {
         if !item.label.to_lowercase().contains(keyword)
           && !item
             .trigger
             .as_deref()
-            .map_or(false, |t| t.to_lowercase().contains(keyword))
+            .is_some_and(|t| t.to_lowercase().contains(keyword))
           && !item
             .search_terms
             .iter()
@@ -100,9 +99,7 @@ fn case_insensitive_keyword(query: &str, items: &[SearchItem]) -> Vec<usize> {
     .collect()
 }
 
-fn command_filter(
-  search_algorithm: Box<dyn Fn(&str, &[SearchItem]) -> Vec<usize>>,
-) -> Box<dyn Fn(&str, &[SearchItem]) -> Vec<usize>> {
+fn command_filter(search_algorithm: Box<FilterCallback>) -> Box<FilterCallback> {
   Box::new(move |query, items| {
     let (valid_ids, trimmed_query) = if query.starts_with('>') {
       (

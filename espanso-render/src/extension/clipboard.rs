@@ -35,8 +35,8 @@ impl<'a> ClipboardExtension<'a> {
   }
 }
 
-impl<'a> Extension for ClipboardExtension<'a> {
-  fn name(&self) -> &str {
+impl Extension for ClipboardExtension<'_> {
+  fn name(&self) -> &'static str {
     "clipboard"
   }
 
@@ -57,6 +57,8 @@ pub enum ClipboardExtensionError {
 
 #[cfg(test)]
 mod tests {
+  use std::collections::HashMap;
+
   use super::*;
 
   struct MockClipboardProvider {
@@ -80,7 +82,11 @@ mod tests {
 
     assert_eq!(
       extension
-        .calculate(&Default::default(), &Default::default(), &Params::new())
+        .calculate(
+          &crate::Context::default(),
+          &HashMap::default(),
+          &Params::new()
+        )
         .into_success()
         .unwrap(),
       ExtensionOutput::Single("test".to_string())
@@ -93,7 +99,11 @@ mod tests {
     let extension = ClipboardExtension::new(&provider);
 
     assert!(matches!(
-      extension.calculate(&Default::default(), &Default::default(), &Params::new()),
+      extension.calculate(
+        &crate::Context::default(),
+        &HashMap::default(),
+        &Params::new()
+      ),
       ExtensionResult::Error(_)
     ));
   }

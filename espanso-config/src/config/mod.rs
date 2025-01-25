@@ -147,7 +147,7 @@ pub trait Config: Send + Sync {
   // Note: currently not working on Linux
   fn show_icon(&self) -> bool;
 
-  // If false, avoid showing the SecureInput notification on macOS
+  // If false, avoid showing the `SecureInput`` notification on macOS
   fn secure_input_notification(&self) -> bool;
 
   // The number of milliseconds to wait after a form has been closed.
@@ -155,6 +155,12 @@ pub trait Config: Send + Sync {
   // after a form has been closed, otherwise the injection might
   // not be targeted to the right application.
   fn post_form_delay(&self) -> usize;
+
+  // The maximum width that a form window can take.
+  fn max_form_width(&self) -> usize;
+
+  // The maximum height that a form window can take.
+  fn max_form_height(&self) -> usize;
 
   // The number of milliseconds to wait after the search bar has been closed.
   // This is useful to let the target application regain focus
@@ -187,9 +193,10 @@ pub trait Config: Send + Sync {
   // The maximum interval (in milliseconds) for which a keyboard layout
   // can be cached. If switching often between different layouts, you
   // could lower this amount to avoid the "lost detection" effect described
-  // in this issue: https://github.com/federico-terzi/espanso/issues/745
+  // in this issue: https://github.com/espanso/espanso/issues/745
   fn win32_keyboard_layout_cache_interval(&self) -> i64;
 
+  #[allow(clippy::needless_lifetimes)]
   fn is_match<'a>(&self, app: &AppProperties<'a>) -> bool;
 
   fn pretty_dump(&self) -> String {
@@ -203,7 +210,7 @@ pub trait Config: Send + Sync {
         key_delay: {:?}
         apply_patch: {:?}
         word_separators: {:?}
-        
+
         preserve_clipboard: {:?}
         clipboard_threshold: {:?}
         disable_x11_fast_inject: {}
@@ -211,9 +218,11 @@ pub trait Config: Send + Sync {
         paste_shortcut_event_delay: {}
         toggle_key: {:?}
         auto_restart: {:?}
-        restore_clipboard_delay: {:?} 
-        post_form_delay: {:?} 
-        post_search_delay: {:?} 
+        restore_clipboard_delay: {:?}
+        post_form_delay: {:?}
+        max_form_width: {:?}
+        max_form_height: {:?}
+        post_search_delay: {:?}
         backspace_limit: {}
         search_trigger: {:?}
         search_shortcut: {:?}
@@ -229,7 +238,7 @@ pub trait Config: Send + Sync {
         win32_keyboard_layout_cache_interval: {:?}
 
         match_paths: {:#?}
-      ", 
+      ",
       self.label(),
       self.backend(),
       self.enable(),
@@ -248,6 +257,8 @@ pub trait Config: Send + Sync {
       self.auto_restart(),
       self.restore_clipboard_delay(),
       self.post_form_delay(),
+      self.max_form_width(),
+      self.max_form_height(),
       self.post_search_delay(),
       self.backspace_limit(),
       self.search_trigger(),
@@ -270,7 +281,7 @@ pub trait Config: Send + Sync {
 
 pub trait ConfigStore: Send {
   fn default(&self) -> Arc<dyn Config>;
-  fn active<'a>(&'a self, app: &AppProperties) -> Arc<dyn Config>;
+  fn active(&self, app: &AppProperties) -> Arc<dyn Config>;
   fn configs(&self) -> Vec<Arc<dyn Config>>;
 
   fn get_all_match_paths(&self) -> HashSet<String>;

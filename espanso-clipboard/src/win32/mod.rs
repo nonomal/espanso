@@ -30,14 +30,20 @@ use widestring::{U16CStr, U16CString};
 pub struct Win32Clipboard {}
 
 impl Win32Clipboard {
-  pub fn new() -> Result<Self> {
-    Ok(Self {})
+  pub fn new() -> Self {
+    Self {}
   }
 }
 
 impl Clipboard for Win32Clipboard {
   fn get_text(&self, _: &ClipboardOperationOptions) -> Option<String> {
-    let mut buffer: [u16; 2048] = [0; 2048];
+    // get the clipbard size
+    let length = unsafe { ffi::clipboard_get_length() };
+    if length <= 0 {
+      return None;
+    }
+    // allocate the buffer
+    let mut buffer: Vec<u16> = vec![0; length as usize];
     let native_result =
       unsafe { ffi::clipboard_get_text(buffer.as_mut_ptr(), (buffer.len() - 1) as i32) };
     if native_result > 0 {
@@ -48,7 +54,7 @@ impl Clipboard for Win32Clipboard {
     }
   }
 
-  fn set_text(&self, text: &str, _: &ClipboardOperationOptions) -> anyhow::Result<()> {
+  fn set_text(&self, text: &str, _: &ClipboardOperationOptions) -> Result<()> {
     let string = U16CString::from_str(text)?;
     let native_result = unsafe { ffi::clipboard_set_text(string.as_ptr()) };
     if native_result > 0 {
@@ -106,9 +112,9 @@ fn generate_html_descriptor(html: &str) -> String {
   // For more information, look here:
   // https://docs.microsoft.com/en-us/windows/win32/dataxchg/html-clipboard-format
   // https://docs.microsoft.com/en-za/troubleshoot/cpp/add-html-code-clipboard
-  let content = format!("<!--StartFragment-->{}<!--EndFragment-->", html);
+  let content = format!("<!--StartFragment-->{html}<!--EndFragment-->");
 
-  let tokens = vec![
+  let tokens = [
     "Version:0.9",
     "StartHTML:<<STR*#>",
     "EndHTML:<<END*#>",

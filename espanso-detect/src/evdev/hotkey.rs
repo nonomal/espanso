@@ -88,7 +88,7 @@ impl HotKeyFilter {
         }
       }));
     } else {
-      key_code = Some(event.code)
+      key_code = Some(event.code);
     }
 
     // Remove the old entries
@@ -108,19 +108,18 @@ impl HotKeyFilter {
 
     // Remove duplicates and revert
     if !to_be_removed.is_empty() {
-      #[allow(clippy::stable_sort_primitive)]
-      to_be_removed.sort();
+      to_be_removed.sort_unstable();
       to_be_removed.dedup();
       to_be_removed.reverse();
-      to_be_removed.into_iter().for_each(|index| {
+      for index in to_be_removed {
         self.memory.remove(index);
-      })
+      }
     }
 
     if let Some(code) = key_code {
       self.memory.push((code, Instant::now()));
 
-      for (id, codes) in self.hotkey_raw_map.iter() {
+      for (id, codes) in &self.hotkey_raw_map {
         if codes
           .iter()
           .all(|hk_code| self.memory.iter().any(|(m_code, _)| m_code == hk_code))
@@ -139,7 +138,7 @@ impl HotKeyFilter {
     let key_code = self.map.get(&hk.key.to_code()?)?;
     codes.push(*key_code);
 
-    for modifier in hk.modifiers.iter() {
+    for modifier in &hk.modifiers {
       let code = self.map.get(&modifier.to_code()?)?;
       codes.push(*code);
     }

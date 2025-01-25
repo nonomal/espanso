@@ -38,7 +38,7 @@ impl<'a> ImageResolverMiddleware<'a> {
   }
 }
 
-impl<'a> Middleware for ImageResolverMiddleware<'a> {
+impl Middleware for ImageResolverMiddleware<'_> {
   fn name(&self) -> &'static str {
     "image_resolve"
   }
@@ -49,7 +49,7 @@ impl<'a> Middleware for ImageResolverMiddleware<'a> {
       let path = if cfg!(target_os = "windows") {
         m_event.image_path.replace('/', "\\")
       } else {
-        m_event.image_path.to_owned()
+        m_event.image_path.clone()
       };
 
       let path = if path.contains("$CONFIG") {

@@ -34,8 +34,8 @@ use crate::preferences::Preferences;
 
 pub fn launch_troubleshoot(paths_overrides: &PathsOverrides) -> Result<TroubleshootGuard> {
   let espanso_exe_path = std::env::current_exe()?;
-  let mut command = Command::new(&espanso_exe_path.to_string_lossy().to_string());
-  command.args(&["modulo", "troubleshoot"]);
+  let mut command = Command::new(espanso_exe_path.to_string_lossy().to_string());
+  command.args(["modulo", "troubleshoot"]);
   command.with_paths_overrides(paths_overrides);
 
   let child = command.spawn()?;
@@ -75,7 +75,7 @@ pub enum LoadResult {
 }
 
 pub fn load_config_or_troubleshoot(paths: &Paths, paths_overrides: &PathsOverrides) -> LoadResult {
-  match crate::load_config(&paths.config, &paths.packages) {
+  match crate::load_config(&paths.config) {
     Ok(load_result) => {
       if load_result.non_fatal_errors.is_empty() {
         LoadResult::Correct(load_result)

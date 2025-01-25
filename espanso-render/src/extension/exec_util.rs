@@ -19,19 +19,32 @@
 
 pub enum MacShell {
   Bash,
+  Nu,
+  Pwsh,
   Sh,
   Zsh,
 }
 
-// Determine the PATH env variable value available inside a regular terminal session
-#[cfg(target_os = "macos")]
+// Determine the PATH env variable value for macOS available inside a regular terminal session
 pub fn determine_path_env_variable_override(explicit_shell: Option<MacShell>) -> Option<String> {
+  if cfg!(not(target_os = "macos")) {
+    return None;
+  }
   let shell: MacShell = explicit_shell.or_else(determine_default_macos_shell)?;
 
   match shell {
     MacShell::Bash => {
       launch_command_and_get_output("bash", &["--login", "-c", "source ~/.bashrc; echo $PATH"])
     }
+    MacShell::Nu => launch_command_and_get_output("nu", &["--login", "-c", "$env.PATH"]),
+    MacShell::Pwsh => launch_command_and_get_output(
+      "pwsh",
+      &[
+        "-Login",
+        "-Command",
+        "if(Test-Path \"$PROFILE\") { . \"$PROFILE\" }; Write-Host $env:PATH",
+      ],
+    ),
     MacShell::Sh => launch_command_and_get_output("sh", &["--login", "-c", "echo $PATH"]),
     MacShell::Zsh => {
       launch_command_and_get_output("zsh", &["--login", "-c", "source ~/.zshrc; echo $PATH"])
@@ -39,18 +52,16 @@ pub fn determine_path_env_variable_override(explicit_shell: Option<MacShell>) ->
   }
 }
 
-#[cfg(not(target_os = "macos"))]
-pub fn determine_path_env_variable_override(_: Option<MacShell>) -> Option<String> {
-  None
-}
-
-#[cfg(target_os = "macos")]
 pub fn determine_default_macos_shell() -> Option<MacShell> {
+  if cfg!(not(target_os = "macos")) {
+    return None;
+  }
+  use lazy_static::lazy_static;
   use regex::Regex;
   use std::process::Command;
 
   let output = Command::new("sh")
-    .args(&["--login", "-c", "dscl . -read ~/ UserShell"])
+    .args(["--login", "-c", "dscl . -read ~/ UserShell"])
     .output()
     .ok()?;
 
@@ -70,21 +81,19 @@ pub fn determine_default_macos_shell() -> Option<MacShell> {
 
   if shell.ends_with("/bash") {
     Some(MacShell::Bash)
-  } else if shell.ends_with("/zsh") {
-    Some(MacShell::Zsh)
+  } else if shell.ends_with("/nu") {
+    Some(MacShell::Nu)
+  } else if shell.ends_with("/pwsh") {
+    Some(MacShell::Pwsh)
   } else if shell.ends_with("/sh") {
     Some(MacShell::Sh)
+  } else if shell.ends_with("/zsh") {
+    Some(MacShell::Zsh)
   } else {
     None
   }
 }
 
-#[cfg(not(target_os = "macos"))]
-pub fn determine_default_macos_shell() -> Option<MacShell> {
-  None
-}
-
-#[cfg(target_os = "macos")]
 fn launch_command_and_get_output(command: &str, args: &[&str]) -> Option<String> {
   use std::process::Command;
 

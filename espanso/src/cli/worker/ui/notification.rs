@@ -55,7 +55,7 @@ impl<'a> NotificationManager<'a> {
   }
 }
 
-impl<'a> espanso_engine::process::NotificationManager for NotificationManager<'a> {
+impl espanso_engine::process::NotificationManager for NotificationManager<'_> {
   fn notify_status_change(&self, enabled: bool) {
     // Don't notify the status change outside Linux for now
     if !cfg!(target_os = "linux") {
@@ -63,9 +63,9 @@ impl<'a> espanso_engine::process::NotificationManager for NotificationManager<'a
     }
 
     if enabled {
-      self.notify("Espanso enabled!")
+      self.notify("Espanso enabled!");
     } else {
-      self.notify("Espanso disabled!")
+      self.notify("Espanso disabled!");
     }
   }
 

@@ -39,7 +39,7 @@ impl<'a> EventInjectorAdapter<'a> {
   }
 }
 
-impl<'a> TextInjector for EventInjectorAdapter<'a> {
+impl TextInjector for EventInjectorAdapter<'_> {
   fn name(&self) -> &'static str {
     "event"
   }
@@ -76,7 +76,7 @@ impl<'a> TextInjector for EventInjectorAdapter<'a> {
       if i > 0 {
         self
           .injector
-          .send_keys(&[espanso_inject::keys::Key::Enter], injection_options)?
+          .send_keys(&[espanso_inject::keys::Key::Enter], injection_options)?;
       }
 
       self.injector.send_string(line, injection_options)?;

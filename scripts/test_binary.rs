@@ -23,6 +23,8 @@ fn main() {
   let wayland = envmnt::get_or("NO_X11", "false") == "true";
   if wayland {
     println!("Using Wayland feature");
+  } else {
+    println!("Using X11 default feature");
   }
 
   let mut args = Vec::new();
@@ -31,8 +33,6 @@ fn main() {
   args.push("--workspace");
   args.push("--exclude");
   args.push("espanso-modulo");
-  args.push("--exclude");
-  args.push("espanso-ipc");
 
   if profile == Profile::Release {
     args.push("--release");
@@ -47,6 +47,13 @@ fn main() {
   let mut features = Vec::new();
   if wayland {
     features.push("wayland");
+  }
+  // On linux, we don't want to rely on OpenSSL to avoid dependency issues
+  // https://github.com/espanso/espanso/issues/1056
+  if cfg!(target_os = "linux") {
+    features.push("vendored-tls")
+  } else {
+    features.push("native-tls")
   }
 
   let features_flag = features.join(" ");

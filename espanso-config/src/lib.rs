@@ -23,24 +23,19 @@ use matches::store::MatchStore;
 use std::path::Path;
 use thiserror::Error;
 
-#[macro_use]
-extern crate lazy_static;
-
 pub mod config;
 mod counter;
 pub mod error;
-mod legacy;
 pub mod matches;
 mod util;
 
-#[allow(clippy::type_complexity)]
-pub fn load(
-  base_path: &Path,
-) -> Result<(
+type LoadableConfig = (
   Box<dyn ConfigStore>,
   Box<dyn MatchStore>,
   Vec<error::NonFatalErrorSet>,
-)> {
+);
+
+pub fn load(base_path: &Path) -> Result<LoadableConfig> {
   let config_dir = base_path.join("config");
   if !config_dir.exists() || !config_dir.is_dir() {
     return Err(ConfigError::MissingConfigDir().into());
@@ -53,25 +48,14 @@ pub fn load(
     matches::store::load(&root_paths.into_iter().collect::<Vec<String>>());
 
   let mut non_fatal_errors = Vec::new();
-  non_fatal_errors.extend(non_fatal_config_errors.into_iter());
-  non_fatal_errors.extend(non_fatal_match_errors.into_iter());
+  non_fatal_errors.extend(non_fatal_config_errors);
+  non_fatal_errors.extend(non_fatal_match_errors);
 
   Ok((
     Box::new(config_store),
     Box::new(match_store),
     non_fatal_errors,
   ))
-}
-
-pub fn load_legacy(
-  config_dir: &Path,
-  package_dir: &Path,
-) -> Result<(Box<dyn ConfigStore>, Box<dyn MatchStore>)> {
-  legacy::load(config_dir, package_dir)
-}
-
-pub fn is_legacy_config(base_dir: &Path) -> bool {
-  base_dir.join("user").is_dir() && base_dir.join("default.yml").is_file()
 }
 
 #[derive(Error, Debug)]
@@ -91,7 +75,7 @@ mod tests {
     use_test_directory(|base, match_dir, config_dir| {
       let base_file = match_dir.join("base.yml");
       std::fs::write(
-        &base_file,
+        base_file,
         r#"
       matches:
         - trigger: "hello"
@@ -102,7 +86,7 @@ mod tests {
 
       let another_file = match_dir.join("another.yml");
       std::fs::write(
-        &another_file,
+        another_file,
         r#"
       imports:
         - "_sub.yml"
@@ -116,7 +100,7 @@ mod tests {
 
       let under_file = match_dir.join("_sub.yml");
       std::fs::write(
-        &under_file,
+        under_file,
         r#"
       matches:
         - trigger: "hello3"
@@ -126,11 +110,11 @@ mod tests {
       .unwrap();
 
       let config_file = config_dir.join("default.yml");
-      std::fs::write(&config_file, "").unwrap();
+      std::fs::write(config_file, "").unwrap();
 
       let custom_config_file = config_dir.join("custom.yml");
       std::fs::write(
-        &custom_config_file,
+        custom_config_file,
         r#"
       filter_title: "Chrome"
 
@@ -186,7 +170,7 @@ mod tests {
     use_test_directory(|base, match_dir, config_dir| {
       let base_file = match_dir.join("base.yml");
       std::fs::write(
-        &base_file,
+        base_file,
         r#"
       matches:
         - "invalid"invalid
@@ -196,7 +180,7 @@ mod tests {
 
       let another_file = match_dir.join("another.yml");
       std::fs::write(
-        &another_file,
+        another_file,
         r#"
       imports:
         - "_sub.yml"
@@ -210,7 +194,7 @@ mod tests {
 
       let under_file = match_dir.join("_sub.yml");
       std::fs::write(
-        &under_file,
+        under_file,
         r#"
       matches:
         - trigger: "hello3"
@@ -220,11 +204,11 @@ mod tests {
       .unwrap();
 
       let config_file = config_dir.join("default.yml");
-      std::fs::write(&config_file, r#""#).unwrap();
+      std::fs::write(config_file, r"").unwrap();
 
       let custom_config_file = config_dir.join("custom.yml");
       std::fs::write(
-        &custom_config_file,
+        custom_config_file,
         r#"
       filter_title: "Chrome"
       "
@@ -261,7 +245,7 @@ mod tests {
       .unwrap();
 
       let config_file = config_dir.join("default.yml");
-      std::fs::write(&config_file, r#""#).unwrap();
+      std::fs::write(config_file, r"").unwrap();
 
       let (config_store, match_store, errors) = load(base).unwrap();
 
@@ -284,18 +268,18 @@ mod tests {
     use_test_directory(|base, match_dir, config_dir| {
       let base_file = match_dir.join("base.yml");
       std::fs::write(
-        &base_file,
-        r#"
+        base_file,
+        r"
       matches:
         - trigger: hello
           replace: world
-      "#,
+      ",
       )
       .unwrap();
 
       let config_file = config_dir.join("default.yml");
       std::fs::write(
-        &config_file,
+        config_file,
         r#"
       invalid
 

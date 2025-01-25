@@ -31,12 +31,12 @@ impl<'a> DefaultFunnel<'a> {
   }
 }
 
-impl<'a> Funnel for DefaultFunnel<'a> {
+impl Funnel for DefaultFunnel<'_> {
   fn receive(&self) -> FunnelResult {
     let mut select = Select::new();
 
     // First register all the sources to the select operation
-    for source in self.sources.iter() {
+    for source in self.sources {
       source.register(&mut select);
     }
 

@@ -48,12 +48,11 @@ fn edit_main(args: CliModuleArgs) -> i32 {
   let paths = args.paths.expect("missing paths argument");
   let cli_args = args.cli_args.expect("missing cli_args");
 
-  if !paths.config.is_dir() {
-    panic!(
-      "config directory does not exist in path: {:?}",
-      paths.config
-    );
-  }
+  assert!(
+    paths.config.is_dir(),
+    "config directory does not exist in path: {:?}",
+    paths.config
+  );
 
   // Determine which is the file to edit
   let target_file = cli_args.value_of("target_file");
@@ -139,34 +138,22 @@ fn edit_main(args: CliModuleArgs) -> i32 {
 fn determine_target_path(config_path: &Path, target_file: Option<&str>) -> PathBuf {
   if let Some(target_file) = target_file {
     match target_file {
-      "default" => {
-        if espanso_config::is_legacy_config(config_path) {
-          config_path.join("default.yml")
-        } else {
-          config_path.join("config").join("default.yml")
-        }
-      }
-      "base" => {
-        if espanso_config::is_legacy_config(config_path) {
-          panic!("'base' alias cannot be used in compatibility mode, please migrate your configuration by running 'espanso migrate'")
-        } else {
-          config_path.join("match").join("base.yml")
-        }
-      }
+      "default" => config_path.join("config").join("default.yml"),
+      "base" => config_path.join("match").join("base.yml"),
       custom => {
-        if !custom.ends_with(".yml") && !custom.ends_with(".yaml") {
-          if espanso_config::is_legacy_config(config_path) {
-            config_path.join("user").join(format!("{}.yml", custom))
-          } else {
-            config_path.join("match").join(format!("{}.yml", custom))
-          }
+        if !std::path::Path::new(custom)
+          .extension()
+          .is_some_and(|ext| ext.eq_ignore_ascii_case("yml"))
+          && !std::path::Path::new(custom)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("yaml"))
+        {
+          config_path.join("match").join(format!("{custom}.yml"))
         } else {
           config_path.join(custom)
         }
       }
     }
-  } else if espanso_config::is_legacy_config(config_path) {
-    config_path.join("default.yml")
   } else {
     config_path.join("match").join("base.yml")
   }

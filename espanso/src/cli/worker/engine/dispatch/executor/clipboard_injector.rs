@@ -85,7 +85,7 @@ impl<'a> ClipboardInjectorAdapter<'a> {
     } else if cfg!(target_os = "linux") && cfg!(feature = "wayland") {
       // Because on Wayland we currently don't have app-specific configs (and therefore no patches)
       // we switch to the more supported SHIFT+INSERT combination
-      // See: https://github.com/federico-terzi/espanso/issues/899
+      // See: https://github.com/espanso/espanso/issues/899
       vec![Key::Shift, Key::Insert]
     } else {
       vec![Key::Control, Key::V]
@@ -126,7 +126,7 @@ impl<'a> ClipboardInjectorAdapter<'a> {
   }
 }
 
-impl<'a> TextInjector for ClipboardInjectorAdapter<'a> {
+impl TextInjector for ClipboardInjectorAdapter<'_> {
   fn name(&self) -> &'static str {
     "clipboard"
   }
@@ -144,7 +144,7 @@ impl<'a> TextInjector for ClipboardInjectorAdapter<'a> {
   }
 }
 
-impl<'a> HtmlInjector for ClipboardInjectorAdapter<'a> {
+impl HtmlInjector for ClipboardInjectorAdapter<'_> {
   fn inject_html(&self, html: &str, fallback_text: &str) -> anyhow::Result<()> {
     let _guard = self.restore_clipboard_guard();
 
@@ -158,7 +158,7 @@ impl<'a> HtmlInjector for ClipboardInjectorAdapter<'a> {
   }
 }
 
-impl<'a> ImageInjector for ClipboardInjectorAdapter<'a> {
+impl ImageInjector for ClipboardInjectorAdapter<'_> {
   fn inject_image(&self, image_path: &str) -> anyhow::Result<()> {
     let path = PathBuf::from(image_path);
     if !path.is_file() {
@@ -207,7 +207,7 @@ impl<'a> ClipboardRestoreGuard<'a> {
   }
 }
 
-impl<'a> Drop for ClipboardRestoreGuard<'a> {
+impl Drop for ClipboardRestoreGuard<'_> {
   fn drop(&mut self) {
     if let Some(content) = self.content.take() {
       // Sometimes an expansion gets overwritten before pasting by the previous content

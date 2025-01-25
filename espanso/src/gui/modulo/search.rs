@@ -46,7 +46,7 @@ impl<'a> ModuloSearchUI<'a> {
   }
 }
 
-impl<'a> SearchUI for ModuloSearchUI<'a> {
+impl SearchUI for ModuloSearchUI<'_> {
   fn show(&self, items: &[SearchItem], hint: Option<&str>) -> anyhow::Result<Option<String>> {
     let modulo_config = ModuloSearchConfig {
       title: "espanso",
@@ -111,7 +111,7 @@ fn convert_items(items: &[SearchItem]) -> Vec<ModuloSearchItemConfig> {
         item
           .additional_search_terms
           .iter()
-          .map(|term| term.as_str())
+          .map(String::as_str)
           .collect()
       },
       is_builtin: item.is_builtin,

@@ -31,24 +31,19 @@ pub struct Lock {
 impl Lock {
   #[allow(dead_code)]
   pub fn release(self) -> Result<()> {
-    self.lock_file.unlock()?;
+    fs2::FileExt::unlock(&self.lock_file)?;
     Ok(())
   }
 
   fn acquire(runtime_dir: &Path, name: &str) -> Option<Lock> {
-    let lock_file_path = runtime_dir.join(format!("{}.lock", name));
+    let lock_file_path = runtime_dir.join(format!("{name}.lock"));
     let lock_file = OpenOptions::new()
       .read(true)
       .write(true)
       .create(true)
+      .truncate(true)
       .open(&lock_file_path)
-      .unwrap_or_else(|_| {
-        panic!(
-          "unable to create reference to lock file: {:?}",
-          lock_file_path
-        )
-      });
-
+      .unwrap_or_else(|_| panic!("unable to create reference to lock file: {lock_file_path:?}"));
     if lock_file.try_lock_exclusive().is_ok() {
       Some(Lock { lock_file })
     } else {
@@ -59,9 +54,7 @@ impl Lock {
 
 impl Drop for Lock {
   fn drop(&mut self) {
-    self
-      .lock_file
-      .unlock()
+    fs2::FileExt::unlock(&self.lock_file)
       .unwrap_or_else(|_| panic!("unable to unlock lock_file: {:?}", self.lock_file));
   }
 }
@@ -72,8 +65,4 @@ pub fn acquire_daemon_lock(runtime_dir: &Path) -> Option<Lock> {
 
 pub fn acquire_worker_lock(runtime_dir: &Path) -> Option<Lock> {
   Lock::acquire(runtime_dir, "espanso-worker")
-}
-
-pub fn acquire_legacy_lock(runtime_dir: &Path) -> Option<Lock> {
-  Lock::acquire(runtime_dir, "espanso")
 }

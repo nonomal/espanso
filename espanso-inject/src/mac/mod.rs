@@ -32,7 +32,7 @@ use crate::{keys, InjectionOptions, Injector};
 #[allow(improper_ctypes)]
 #[link(name = "espansoinject", kind = "static")]
 extern "C" {
-  pub fn inject_string(string: *const c_char, delay: i32);
+  pub fn inject_string(string: *const c_char, default_delay: i32, delay: i32);
   pub fn inject_separate_vkeys(vkey_array: *const i32, vkey_count: i32, delay: i32);
   pub fn inject_vkeys_combination(vkey_array: *const i32, vkey_count: i32, delay: i32);
 }
@@ -47,10 +47,10 @@ impl MacInjector {
 
   pub fn convert_to_vk_array(keys: &[keys::Key]) -> Result<Vec<i32>> {
     let mut virtual_keys: Vec<i32> = Vec::new();
-    for key in keys.iter() {
+    for key in keys {
       let vk = convert_key_to_vkey(key);
       if let Some(vk) = vk {
-        virtual_keys.push(vk)
+        virtual_keys.push(vk);
       } else {
         return Err(MacInjectorError::MappingFailure(key.clone()).into());
       }
@@ -63,7 +63,11 @@ impl Injector for MacInjector {
   fn send_string(&self, string: &str, options: InjectionOptions) -> Result<()> {
     let c_string = CString::new(string)?;
     unsafe {
-      inject_string(c_string.as_ptr(), options.delay);
+      inject_string(
+        c_string.as_ptr(),
+        InjectionOptions::default().delay,
+        options.delay,
+      );
     }
     Ok(())
   }
